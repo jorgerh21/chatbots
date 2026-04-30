@@ -1,6 +1,6 @@
 (function () {
     // Configuración
-    const API_URL = 'https://api.sitioz.com/chat.php';  // Ruta a tu api.php
+    const API_URL = 'https://chats.sitioz.com/chat.php';  // Ruta a tu api.php
     const STORAGE_KEY = 'sales_chat_history';
     const WELCOME_MESSAGE = '¡Hola! Soy tu asesor de ventas IA. ¿En qué puedo ayudarte hoy?';
 
