@@ -108,7 +108,7 @@
             </div>
             <div id="chat-container" class="chat-container">
                 <div class="chat-header">
-                    <span>🤖 Asesor de ventas IA</span>
+                    <span>🤖 Asesor de ventas IA SitioZ</span>
                     <div>
                         <button id="reset-chat" title="Reiniciar conversación">⟳</button>
                         <button id="close-chat">−</button>
