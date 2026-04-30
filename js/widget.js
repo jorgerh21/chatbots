@@ -36,7 +36,11 @@
         if (!messagesContainer) return;
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${role === 'user' ? 'user-message' : 'assistant-message'}`;
-        messageDiv.textContent = content;
+        if (role === 'assistant') {
+            messageDiv.innerHTML = content; // Permitir HTML solo para asistente
+        } else {
+            messageDiv.textContent = content; // Usuario texto plano
+        }
         messagesContainer.appendChild(messageDiv);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
