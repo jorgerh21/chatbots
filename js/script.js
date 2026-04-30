@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 // 🔁 Cambia la URL si tu endpoint está en otro dominio
-                const response = await fetch('https://chats.sitioz.com/contacto.php', {
+                const response = await fetch('https://api.sitioz.com/contacto.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ nombre, email, mensaje })
