@@ -121,7 +121,7 @@
             <div id="chat-button" class="chat-button">
                 💬
             </div>
-            <div id="chat-container" class="chat-container closed">
+            <div id="chat-container" class="chat-container">
                 <div class="chat-header">
                     <span>🤖 Asesor de ventas IA</span>
                     <button id="close-chat">−</button>
