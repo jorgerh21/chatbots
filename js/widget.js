@@ -4,7 +4,7 @@
     const STORAGE_KEY = 'sales_chat_history';
     const WELCOME_MESSAGE = '¡Hola! Soy tu asesor de ventas IA. ¿En qué puedo ayudarte hoy?';
 
-    // Estado inicial del historial (incluye mensaje de bienvenida del asistente)
+    // Estado inicial del historial
     let chatHistory = [];
 
     // Cargar historial desde localStorage
@@ -13,34 +13,24 @@
         if (stored) {
             chatHistory = JSON.parse(stored);
         } else {
-            // Inicializar con el mensaje del sistema y el de bienvenida
-            chatHistory = [
-                { role: 'system', content: 'Eres un agente de ventas...' } // En realidad el sistema se envía desde el backend, pero podemos mantenerlo aquí para referencia, aunque no se enviará.
-            ];
-            // Agregar mensaje de bienvenida del asistente (opcional, pero el backend lo generaría si no hay historial? Mejor ponerlo manual)
-            // Para que el usuario vea algo al abrir el chat, añadimos un mensaje inicial del asistente.
-            // Pero cuidado: el backend no lo sabrá a menos que se lo enviemos. En la primera interacción el historial tendrá solo el mensaje del usuario.
-            // En lugar de guardar un mensaje de asistente falso, lo mostraremos directamente en la UI sin almacenarlo.
-            // Entonces el historial enviado al backend empezará vacío (solo el mensaje del usuario tras el primer envío).
-            // Para simplificar, no guardamos el mensaje de bienvenida en el historial; se muestra en la UI pero no se envía.
+            chatHistory = [];
         }
     }
 
-    // Guardar historial en localStorage (solo los mensajes de usuario y asistente, no el system)
+    // Guardar historial en localStorage (solo user y assistant)
     function saveHistory() {
-        // Filtramos para no guardar mensajes con role 'system' si los hubiera
         const toStore = chatHistory.filter(m => m.role !== 'system');
         localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore));
     }
 
-    // Añadir un mensaje al historial (local y UI)
+    // Añadir un mensaje al historial y a la UI
     function addMessage(role, content, save = true) {
         chatHistory.push({ role, content });
         if (save) saveHistory();
         renderMessage(role, content);
     }
 
-    // Renderizar un solo mensaje en el contenedor del chat
+    // Renderizar un mensaje en el contenedor
     function renderMessage(role, content) {
         const messagesContainer = document.getElementById('chat-messages');
         if (!messagesContainer) return;
@@ -51,12 +41,11 @@
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
-    // Mostrar indicador de escritura
+    // Indicador de escritura
     let typingIndicator = null;
     function showTyping() {
         const container = document.getElementById('chat-messages');
-        if (!container) return;
-        if (typingIndicator) return;
+        if (!container || typingIndicator) return;
         typingIndicator = document.createElement('div');
         typingIndicator.className = 'message assistant-message typing-indicator';
         typingIndicator.textContent = '✍️ El agente está escribiendo...';
@@ -70,17 +59,13 @@
         }
     }
 
-    // Enviar mensaje del usuario al backend
+    // Enviar mensaje al backend
     async function sendMessage(userMessage) {
         if (!userMessage.trim()) return;
 
-        // Agregar mensaje del usuario al historial y UI
         addMessage('user', userMessage, true);
-
-        // Mostrar indicador
         showTyping();
 
-        // Preparar historial para enviar: solo user y assistant (sin system)
         const historyToSend = chatHistory.filter(m => m.role !== 'system');
 
         try {
@@ -97,13 +82,10 @@
                 return;
             }
 
-            // Agregar respuesta del asistente al historial y UI
             addMessage('assistant', data.reply, true);
 
-            // Si se detectaron datos de lead, podemos mostrarlos en consola o en un aviso
             if (data.lead && Object.keys(data.lead).length) {
                 console.log('Lead capturado:', data.lead);
-                // Opcional: mostrar un pequeño tooltip o notificación
             }
         } catch (error) {
             hideTyping();
@@ -114,7 +96,6 @@
 
     // Crear la interfaz del widget flotante
     function createWidget() {
-        // Contenedor principal
         const widgetDiv = document.createElement('div');
         widgetDiv.id = 'sales-chat-widget';
         widgetDiv.innerHTML = `
@@ -124,7 +105,10 @@
             <div id="chat-container" class="chat-container">
                 <div class="chat-header">
                     <span>🤖 Asesor de ventas IA</span>
-                    <button id="close-chat">−</button>
+                    <div>
+                        <button id="reset-chat" title="Reiniciar conversación">⟳</button>
+                        <button id="close-chat">−</button>
+                    </div>
                 </div>
                 <div id="chat-messages" class="chat-messages"></div>
                 <div class="chat-input-area">
@@ -135,7 +119,7 @@
         `;
         document.body.appendChild(widgetDiv);
 
-        // Estilos CSS (inline para evitar archivo externo)
+        // Estilos CSS
         const style = document.createElement('style');
         style.textContent = `
             #sales-chat-widget {
@@ -194,6 +178,7 @@
                 color: white;
                 font-size: 18px;
                 cursor: pointer;
+                margin-left: 8px;
             }
             .chat-messages {
                 height: 350px;
@@ -264,6 +249,7 @@
         const chatContainer = document.getElementById('chat-container');
         const chatButton = document.getElementById('chat-button');
         const closeChat = document.getElementById('close-chat');
+        const resetChat = document.getElementById('reset-chat');
         const chatInput = document.getElementById('chat-input');
         const sendButton = document.getElementById('chat-send');
 
@@ -275,6 +261,17 @@
         closeChat.addEventListener('click', () => {
             chatContainer.classList.add('closed');
         });
+
+        // Reiniciar conversación
+        function resetConversation() {
+            const messagesContainer = document.getElementById('chat-messages');
+            if (messagesContainer) messagesContainer.innerHTML = '';
+            chatHistory = [];
+            localStorage.removeItem(STORAGE_KEY);
+            addMessage('assistant', WELCOME_MESSAGE, true);
+            chatInput.focus();
+        }
+        resetChat.addEventListener('click', resetConversation);
 
         // Enviar mensaje
         function handleSend() {
@@ -292,23 +289,12 @@
             }
         });
 
-        // Cargar historial y mostrar mensajes existentes
+        // Cargar historial y mostrar mensajes
         loadHistory();
-        // Mostrar mensajes previos en la UI
         chatHistory.forEach(msg => {
-            if (msg.role !== 'system') {
-                renderMessage(msg.role, msg.content);
-            }
+            if (msg.role !== 'system') renderMessage(msg.role, msg.content);
         });
-        // Si no hay ningún mensaje en el historial (excepto system), mostrar bienvenida
         if (chatHistory.filter(m => m.role !== 'system').length === 0) {
-            // Agregar un mensaje de bienvenida solo en UI, no lo guardamos en historial para no enviarlo al backend.
-            // Pero mejor si lo guardamos? El backend necesita saber que el asistente ya dijo eso? No, porque el usuario aún no ha enviado nada.
-            // Mostramos bienvenida pero no la persistimos.
-            renderMessage('assistant', WELCOME_MESSAGE);
-            // Opcional: también lo agregamos al historial? Si lo agregamos, al enviar el primer mensaje del usuario se enviaría también este mensaje de bienvenida como parte del historial, lo que está bien porque el contexto incluye que el asistente ya saludó.
-            // Para que el asistente tenga contexto, es mejor guardarlo.
-            // Entonces añadimos al historial y guardamos.
             addMessage('assistant', WELCOME_MESSAGE, true);
         }
     }
